@@ -3,18 +3,18 @@ const dgraphOperationManager = require('../operation-manager');
 
 const router = new Router();
 
-router.post('/tag', async ctx => {
+router.post('/category', async ctx => {
   const {
     name,
     description,
-    categoryIds // array of strings
+    tagIds // array of strings
   } = ctx.request.body;
 
   try {
-    const result = await dgraphOperationManager.setTag({
+    const result = await dgraphOperationManager.setCategories({
       name,
       description,
-      categoryIds
+      tagIds
     });
 
     ctx.body = result;
@@ -27,7 +27,7 @@ router.post('/tag', async ctx => {
   }
 });
 
-router.get('/tag/:id', async ctx => {
+router.get('/category/:id', async ctx => {
   const { id } = ctx.params;
 
   const result = await dgraphOperationManager.get({ id });

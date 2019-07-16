@@ -2,11 +2,10 @@ const dgraph = require('dgraph-js');
 const dgraphClient = require('./dgraph-connection');
 
 const tagSchema = `
-id: string @index(exact) .
+id: string @index(term) .
 name: string @index(exact) .
-tags: uid .
+tagCategory: uid .
 description: string .
-categories: uid .
 type: string .
 createdBy: string .
 createdAt: dateTime .
