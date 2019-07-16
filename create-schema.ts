@@ -1,5 +1,5 @@
-const dgraph = require('dgraph-js');
-const dgraphClient = require('./dgraph-connection');
+import * as dgraph from 'dgraph-js';
+import { dgraphClient } from './dgraph-connection';
 
 const tagSchema = `
 id: string @index(term) .

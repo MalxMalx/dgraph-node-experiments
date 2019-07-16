@@ -1,6 +1,7 @@
-const dgraph = require('dgraph-js');
-const dgraphClient = require('./dgraph-connection');
-const uuidv4 = require('uuid/v4');
+import * as dgraph from 'dgraph-js';
+import { dgraphClient } from './dgraph-connection';
+import * as uuidv4 from 'uuid/v4';
+import { getArrayDifferences } from './helpers/get-array-differences';
 
 const allFields = `uid
 expand(_all_){
@@ -28,13 +29,6 @@ const queryById = `query all($id: string) {
     ${allFields}
   }
 }`;
-
-const queryEqualTemplate = `query all($type: string, $equalParamName: string, $equalParamValue: string) {
-  all(func: eq(type, $id)) @filter(eq($equalParamName, $equalParamValue))
-  {
-    ${allFields}
-  }
-}`
 
 function getQueryParams(entity) {
   let query;
@@ -105,7 +99,10 @@ async function setTag(entity) {
   if (entity.categoryIds) {
     const categories = await getArrayByIds(entity.categoryIds);
 
-    entity.categories = categories.map(item => ({ uid: item.uid, tags: { uid: entity.uid } }));
+    entity.categories = categories.map(item => ({
+      uid: item.uid,
+      tags: { uid: entity.uid }
+    }));
   }
 
   const mu = new dgraph.Mutation();
@@ -122,6 +119,78 @@ async function setTag(entity) {
   return getResult[0];
 }
 
+async function updateTag(tagId, tagData) {
+  const tagSearchResult = await get({ id: tagId });
+
+  if (!tagSearchResult.length) {
+    throw new Error('Tag was not found');
+  }
+
+  const existedTag = tagSearchResult[0];
+  const { name, description, categoryIds } = tagData;
+  existedTag.name = name;
+  existedTag.description = description;
+  existedTag.updated = new Date();
+
+  const mu = new dgraph.Mutation();
+
+  if (categoryIds) {
+    const existedCategoryUids = (existedTag.categories || []).map(
+      item => item.uid
+    );
+    const categories = await getArrayByIds(categoryIds);
+    const newCategoryUids = categories.map(item => item.uid);
+
+    const { toRemove } = getArrayDifferences<string>(
+      existedCategoryUids,
+      newCategoryUids
+    );
+
+    if (toRemove.length) {
+      const deleteMu = new dgraph.Mutation();
+      deleteMu.setDeleteJson({
+        uid: existedTag.uid,
+        categories: toRemove.map(item => ({ uid: item }))
+      });
+      const deleteTxn = dgraphClient.newTxn();
+      await deleteTxn.mutate(deleteMu);
+      await deleteTxn.commit();
+    }
+    existedTag.categories = categories.map(item => ({
+      uid: item.uid,
+      tags: { uid: existedTag.uid }
+    }));
+  }
+
+  mu.setSetJson(existedTag);
+
+  const txn = dgraphClient.newTxn();
+
+  await txn.mutate(mu);
+  await txn.commit();
+
+  const getResult = await get({ id: existedTag.id });
+
+  return getResult[0];
+}
+
+async function deleteTag(tagId) {
+  const tagSearchResult = await get({ id: tagId });
+
+  if (!tagSearchResult.length) {
+    throw new Error('Tag was not found');
+  }
+  const mu = new dgraph.Mutation();
+  mu.setDeleteJson({
+    uid: tagSearchResult[0].uid
+  });
+
+  const txn = dgraphClient.newTxn();
+
+  await txn.mutate(mu);
+  await txn.commit();
+}
+
 async function setCategories(categoryInfo) {
   const existingEntity = await get(categoryInfo);
 
@@ -136,7 +205,10 @@ async function setCategories(categoryInfo) {
   if (categoryInfo.tagIds) {
     const tags = await getArrayByIds(categoryInfo.tagIds);
 
-    categoryInfo.tags = tags.map(tag => ({ uid: tag.uid, categories: { uid: categoryInfo.uid } }))
+    categoryInfo.tags = tags.map(tag => ({
+      uid: tag.uid,
+      categories: { uid: categoryInfo.uid }
+    }));
   }
 
   const mu = new dgraph.Mutation();
@@ -155,5 +227,7 @@ async function setCategories(categoryInfo) {
 module.exports = {
   get,
   setTag,
-  setCategories
+  setCategories,
+  updateTag,
+  deleteTag
 };

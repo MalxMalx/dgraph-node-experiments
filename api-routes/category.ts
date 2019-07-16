@@ -1,4 +1,5 @@
-const Router = require('koa-router');
+import * as Router from 'koa-router';
+
 const dgraphOperationManager = require('../operation-manager');
 
 const router = new Router();
@@ -37,7 +38,6 @@ router.get('/category/:id', async ctx => {
   }
 
   ctx.body = result;
-
 });
 
-module.exports = router;
+export default router;

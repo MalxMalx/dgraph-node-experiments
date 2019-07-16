@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "strictNullChecks": true,
+    "target": "es6",
+    "allowJs": true,
+    "module": "commonjs",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitAny": false,
+    "sourceMap": false,
+    "outDir": "./build/",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "typeRoots": ["node_modules/@types", "./**/typings"],
+    "lib": ["dom", "es5", "es6", "es7", "es2015", "es2015.promise", "es2017"],
+    "rootDirs": ["./"],
+    "baseUrl": ".",
+    "types": ["node"],
+    "resolveJsonModule": true,
+    "jsx": "react"
+  },
+  "include": ["./**/*.ts"],
+  "exclude": ["node_modules"]
+}

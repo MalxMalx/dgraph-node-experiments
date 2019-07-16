@@ -1,7 +1,7 @@
-const Koa = require('koa');
-const bodyParser = require('koa-body');
-const tagRouter = require('./api-routes/tag');
-const categoryRouter = require('./api-routes/category');
+import * as Koa from 'koa';
+import * as bodyParser from 'koa-body';
+import tagRouter from './api-routes/tag';
+import categoryRouter from './api-routes/category';
 const createDgraphSchema = require('./create-schema');
 
 const PORT = 6001;
