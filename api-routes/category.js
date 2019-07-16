@@ -37,6 +37,7 @@ router.get('/category/:id', async ctx => {
   }
 
   ctx.body = result;
+
 });
 
 module.exports = router;

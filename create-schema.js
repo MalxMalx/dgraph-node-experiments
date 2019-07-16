@@ -4,9 +4,10 @@ const dgraphClient = require('./dgraph-connection');
 const tagSchema = `
 id: string @index(term) .
 name: string @index(exact) .
-tagCategory: uid .
+tags: uid .
+categories: uid .
 description: string .
-type: string .
+type: string @index(exact) .
 createdBy: string .
 createdAt: dateTime .
 updatedAt: dateTime .

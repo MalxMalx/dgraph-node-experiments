@@ -30,13 +30,14 @@ router.post('/tag', async ctx => {
 router.get('/tag/:id', async ctx => {
   const { id } = ctx.params;
 
-  const result = await dgraphOperationManager.get({ id });
+  const getResult = await dgraphOperationManager.get({ id });
 
-  if (result.length === 0) {
+  if (getResult.length === 0) {
     return ctx.throw(404);
   }
 
-  ctx.body = result;
+  ctx.body = getResult;
+
 });
 
 module.exports = router;

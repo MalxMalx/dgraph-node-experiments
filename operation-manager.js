@@ -29,6 +29,13 @@ const queryById = `query all($id: string) {
   }
 }`;
 
+const queryEqualTemplate = `query all($type: string, $equalParamName: string, $equalParamValue: string) {
+  all(func: eq(type, $id)) @filter(eq($equalParamName, $equalParamValue))
+  {
+    ${allFields}
+  }
+}`
+
 function getQueryParams(entity) {
   let query;
   let vars;
@@ -89,14 +96,16 @@ async function setTag(entity) {
   if (existingEntity.length) {
     throw new Error('already exists');
   }
+  entity.uid = '_:newTag';
   entity.id = uuidv4();
+  entity.type = 'tag';
   entity.createdAt = date;
   entity.updatedAt = date;
 
   if (entity.categoryIds) {
     const categories = await getArrayByIds(entity.categoryIds);
 
-    entity.tagCategory = categories.map(item => ({ uid: item.uid }));
+    entity.categories = categories.map(item => ({ uid: item.uid, tags: { uid: entity.uid } }));
   }
 
   const mu = new dgraph.Mutation();
@@ -108,7 +117,7 @@ async function setTag(entity) {
   await txn.mutate(mu);
   await txn.commit();
 
-  const getResult = await get(entity);
+  const getResult = await get({ id: entity.id });
 
   return getResult[0];
 }
@@ -120,7 +129,15 @@ async function setCategories(categoryInfo) {
     throw new Error('already exists');
   }
 
+  categoryInfo.uid = '_:newCategory';
+  categoryInfo.type = 'category';
   categoryInfo.id = uuidv4();
+
+  if (categoryInfo.tagIds) {
+    const tags = await getArrayByIds(categoryInfo.tagIds);
+
+    categoryInfo.tags = tags.map(tag => ({ uid: tag.uid, categories: { uid: categoryInfo.uid } }))
+  }
 
   const mu = new dgraph.Mutation();
 
@@ -130,19 +147,8 @@ async function setCategories(categoryInfo) {
   await txn.mutate(mu);
   await txn.commit();
 
-  const getResult = await get(categoryInfo);
+  const getResult = await get({ id: categoryInfo.id });
 
-  if (categoryInfo.tagIds) {
-    const tags = await getArrayByIds(categoryInfo.tagIds);
-
-    const updatedTags = tags.map(tag => ({
-      ...tag,
-      updatedAt: new Date(),
-      tagCategory: { uuid: getResult.uid }
-    }));
-
-    categoryInfo['~tagCategory'] = tags.map(item => ({ uid: item.uid })); // does not work =(
-  }
   return getResult[0];
 }
 
