@@ -1,5 +1,5 @@
 import * as dgraph from 'dgraph-js';
-import { dgraphClient } from './dgraph-connection';
+
 import * as uuidv4 from 'uuid/v4';
 import { getArrayDifferences } from './helpers/get-array-differences';
 
@@ -16,16 +16,15 @@ const queryByName = `query all($name: string) {
   }
 }`;
 
-const queryByUid = `query all($uid:  uid) {
-  all(func: uid($uid))
+const queryByUid = `query all($_uid) {
+  all(func: uid($_uid))
   {
     ${allFields}
   }
 }`;
 
-const queryById = `query all($id: string) {
-  all(func: eq(id, $id))
-  {
+const queryById = (id: string) => `{ 
+  all(func: eq(id, ${id})){
     ${allFields}
   }
 }`;
@@ -37,13 +36,10 @@ function getQueryParams(entity) {
   if (entity.uid) {
     query = queryByUid;
     vars = {
-      $uid: entity.uid
+      $_uid: entity.uid
     };
   } else if (entity.id) {
-    query = queryById;
-    vars = {
-      $id: entity.id
-    };
+    query = queryById(entity.id);
   } else if (entity.name) {
     query = queryByName;
     vars = {
@@ -62,13 +58,21 @@ function getQueryParams(entity) {
 }
 
 async function get(entity) {
+  const dgraphClient = await getClient();
   const { query, vars } = getQueryParams(entity);
-  const queryResult = await dgraphClient.newTxn().queryWithVars(query, vars);
+  let queryResult;
+  if (vars) {
+    queryResult = await dgraphClient.newTxn().queryWithVars(query, vars);
+  } else {
+    queryResult = await dgraphClient.newTxn().query(query);
+  }
 
   return queryResult.getJson().all;
 }
 
 async function getArrayByIds(ids) {
+  const dgraphClient = await getClient();
+
   const query = `query all($ids: string) {
     all(func: anyofterms(id, $ids))
     {
@@ -84,6 +88,8 @@ async function getArrayByIds(ids) {
 }
 
 async function setTag(entity) {
+  const dgraphClient = await getClient();
+
   const existingEntity = await get(entity);
   const date = new Date();
 
@@ -111,15 +117,17 @@ async function setTag(entity) {
 
   const txn = dgraphClient.newTxn();
 
-  await txn.mutate(mu);
+  const mutateResponse = await txn.mutate(mu);
   await txn.commit();
 
-  const getResult = await get({ id: entity.id });
+  const getResult = await get({ uid: mutateResponse.getUidsMap().arr_[0][1] });
 
   return getResult[0];
 }
 
 async function updateTag(tagId, tagData) {
+  const dgraphClient = await getClient();
+
   const tagSearchResult = await get({ id: tagId });
 
   if (!tagSearchResult.length) {
@@ -169,12 +177,14 @@ async function updateTag(tagId, tagData) {
   await txn.mutate(mu);
   await txn.commit();
 
-  const getResult = await get({ id: existedTag.id });
+  const getResult = await get({ uid: existedTag.uid });
 
   return getResult[0];
 }
 
 async function deleteTag(tagId) {
+  const dgraphClient = await getClient();
+
   const tagSearchResult = await get({ id: tagId });
 
   if (!tagSearchResult.length) {
@@ -192,6 +202,8 @@ async function deleteTag(tagId) {
 }
 
 async function setCategories(categoryInfo) {
+  const dgraphClient = await getClient();
+
   const existingEntity = await get(categoryInfo);
 
   if (existingEntity.length) {

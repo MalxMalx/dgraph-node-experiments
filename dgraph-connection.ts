@@ -1,8 +1,6 @@
-import * as dgraph from 'dgraph-js';
-import * as grpc from 'grpc';
+import { Client } from './orm';
 
-const clientStub = new dgraph.DgraphClientStub(
-  'localhost:9080',
-  grpc.credentials.createInsecure()
-);
-export const dgraphClient = new dgraph.DgraphClient(clientStub);
+export const client = new Client({
+  addr: 'localhost:9080',
+  debugMode: true
+});

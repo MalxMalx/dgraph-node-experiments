@@ -1,5 +1,5 @@
 import * as dgraph from 'dgraph-js';
-import { dgraphClient } from './dgraph-connection';
+import { client } from './dgraph-connection';
 
 const tagSchema = `
 id: string @index(term) .
@@ -14,9 +14,7 @@ updatedAt: dateTime .
 `;
 
 async function createSchema(schema) {
-  const op = new dgraph.Operation();
-  op.setSchema(schema);
-  await dgraphClient.alter(op);
+  await client.setSchemas(schema);
 }
 
 module.exports = () => createSchema(tagSchema);
