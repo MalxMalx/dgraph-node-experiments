@@ -42,19 +42,19 @@ export class Client {
   }
 
   async query(query: string): Promise<any> {
-    this.checkConnection();
+    this.assertConnection();
     const queryResult = await this.dgraphClient.newTxn().query(query);
     return queryResult.getJson();
   }
 
   async setSchemas(schemas: string): Promise<void> {
-    this.checkConnection();
+    this.assertConnection();
     const op = new Operation();
     op.setSchema(schemas);
     await this.dgraphClient.alter(op);
   }
 
-  private checkConnection() {
+  private assertConnection() {
     if (!this.isConnected) {
       throw new NoConnectionError();
     }
