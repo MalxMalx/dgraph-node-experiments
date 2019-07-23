@@ -23,8 +23,7 @@ export class Client {
   async connect(): Promise<void> {
     const { addr, userId, password, debugMode } = this.connectionOptions;
 
-    const grpcCredantials = grpc.credentials.createInsecure();
-    const clientStub = new DgraphClientStub(addr, grpcCredantials);
+    const clientStub = new DgraphClientStub(addr, grpc.credentials.createInsecure());
 
     if (userId) {
       await clientStub.login(userId, password);
