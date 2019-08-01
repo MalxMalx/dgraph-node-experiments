@@ -1,19 +1,64 @@
+import { FacetType } from './types/facet';
+
+interface BasePredicate {
+  name: string;
+  type: string;
+}
+
+class Node {
+  private model: EntityCache;
+  private name: string;
+  private relatedModel: EntityCache;
+  private isDirect: boolean;
+
+  constructor(
+    model: EntityCache,
+    name: string,
+    relatedModel: EntityCache,
+    isDirect: boolean
+  ) {
+    this.model = model;
+    this.name = name;
+    this.relatedModel = relatedModel;
+    this.isDirect = isDirect;
+  }
+
+  getName(): string {
+    return this.name;
+  }
+
+  getQueryParam(): string {
+    const entityType = this.model.entityType;
+    const relatedEntityType = this.relatedModel.entityType;
+    return this.isDirect
+      ? `${this.name} : __${entityType}_${relatedEntityType}`
+      : `${this.name} : ~__${relatedEntityType}_${entityType}`;
+  }
+}
+
 export class EntityCache {
   public modelName: string;
   public entityType: string;
-  public predicates: {
-    name: string;
-    type: string;
-  }[];
-  public nodes: {
-    name: string;
-    entityType: string;
-  }[];
+  public edges: BasePredicate[];
+  public nodes: Node[];
+  public facets: BasePredicate[];
 
   constructor(entityName: string) {
     this.modelName = entityName;
-    this.predicates = [];
+    this.edges = [];
     this.nodes = [];
+  }
+
+  addEdge(name: string, type: string) {
+    this.edges.push({ name, type });
+  }
+
+  addFacet(name: string, type: string) {
+    this.facets.push({ name, type });
+  }
+
+  addNode(name: string, relatedModel: EntityCache, isDirect: boolean): void {
+    this.nodes.push(new Node(this, name, relatedModel, isDirect));
   }
 }
 
@@ -24,22 +69,26 @@ class ModelMetadataCache {
     this.entityCache = [];
   }
 
-  addPredicate(
-    modelName: string,
-    propertyName: string,
-    predicateType: string
-  ): void {
+  addEdge(modelName: string, propertyName: string, edgeType: string): void {
     const entityCache = this.getOrCreateItemByModelName(modelName);
-
-    entityCache.predicates.push({ name: propertyName, type: predicateType });
+    entityCache.addEdge(propertyName, edgeType);
   }
 
-  addNode(modelName: string, propertyName: string, nodeType): void {
+  addFacet(modelName: string, propertyName: string, type: FacetType): void {
     const entityCache = this.getOrCreateItemByModelName(modelName);
-    entityCache.nodes.push({
-      name: propertyName,
-      entityType: nodeType
-    });
+    entityCache.addFacet(propertyName, type);
+  }
+
+  addNode(
+    modelName: string,
+    propertyName: string,
+    relatedModelName,
+    isDirect
+  ): void {
+    const entityCache = this.getOrCreateItemByModelName(modelName);
+    const relatedModel = this.getOrCreateItemByModelName(relatedModelName);
+
+    entityCache.addNode(propertyName, relatedModel, isDirect);
   }
 
   setEntityType(modelName: string, entityType: string): void {

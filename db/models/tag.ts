@@ -1,26 +1,29 @@
-import { Entity, Node, Predicate } from '../../orm/model-decorators';
+import { Entity, Node, Edge, BaseEntity } from '../../orm';
 import { CategoryModel } from './category';
 
 @Entity({ type: 'tag' })
-export class TagModel {
-  @Predicate('string')
+export class TagModel extends BaseEntity {
+  @Edge('string')
   public id: string;
 
-  @Predicate('string')
+  @Edge('string')
   public name: string;
 
-  @Predicate('string')
+  @Edge('string')
   public description: string;
 
-  @Predicate('string')
+  @Edge('string')
   public createdBy: string;
 
-  @Predicate('dateTime')
+  @Edge('dateTime')
   public createdAt: Date;
 
-  @Predicate('')
+  @Edge('dateTime')
   public updatedAt: Date;
 
-  @Node('category')
+  @Node({
+    model: CategoryModel,
+    linkType: 'direct'
+  })
   public categories: CategoryModel[];
 }

@@ -8,7 +8,7 @@ export class Repository<T> {
 
   constructor(client, entityType: { new (): T }) {
     this.client = client;
-    const modelName = entityType.prototype.constructor.name;
+    const modelName = entityType.name;
     this.entityCache = modelMetadataCache.getOrCreateItemByModelName(modelName);
   }
 
@@ -31,14 +31,14 @@ export class Repository<T> {
     const query = `
     {
       all(func: eq(type, "${this.entityCache.entityType}")) ${filters} {
-        ${this.entityCache.predicates.map(item => `${item.name}\n`)}
+        ${this.entityCache.edges.map(item => `${item.name}\n`)}
         ${this.entityCache.nodes.map(node => {
           const nodeEntityType = modelMetadataCache.getItemByEntityType(
             node.entityType
           );
 
           return `${node.name} {
-            ${nodeEntityType.predicates.map(item => `${item.name}\n`)}
+            ${nodeEntityType.edges.map(item => `${item.name}\n`)}
           }`;
         })}
       }
